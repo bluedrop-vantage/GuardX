@@ -1,0 +1,85 @@
+{{- if .Values.control.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guardx.fullname" . }}-control
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+spec:
+  replicas: {{ .Values.control.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector:
+    matchLabels: { app: {{ include "guardx.fullname" . }}-control }
+  template:
+    metadata:
+      labels:
+        app: {{ include "guardx.fullname" . }}-control
+        {{- include "guardx.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: control
+          image: {{ include "guardx.image" (dict "root" . "repo" .Values.control.image.repository) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GUARDX_DATABASE_URL
+              value: {{ .Values.control.env.databaseUrl | quote }}
+            - name: GUARDX_CORS_ALLOWED_ORIGINS
+              value: {{ .Values.control.env.corsAllowedOrigins | quote }}
+            - name: GUARDX_API_KEY_ADMIN
+              value: {{ .Values.control.env.apiKeyAdmin | quote }}
+            - name: GUARDX_API_KEY_SERVICE
+              value: {{ .Values.control.env.apiKeyService | quote }}
+            {{- if .Values.control.signingKey.existingSecret }}
+            - name: GUARDX_SIGNING_KEY_PATH
+              value: /var/run/guardx/signing.pem
+            {{- end }}
+          resources:
+            {{- toYaml .Values.control.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.control.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.control.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.control.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.control.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.control.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.control.probes.readiness.periodSeconds }}
+          {{- if .Values.control.signingKey.existingSecret }}
+          volumeMounts:
+            - name: signing-key
+              mountPath: /var/run/guardx
+              readOnly: true
+          {{- end }}
+      {{- if .Values.control.signingKey.existingSecret }}
+      volumes:
+        - name: signing-key
+          secret:
+            secretName: {{ .Values.control.signingKey.existingSecret }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "guardx.fullname" . }}-control
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: control
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.control.service.port }}
+      targetPort: 8080
+      name: http
+  selector:
+    app: {{ include "guardx.fullname" . }}-control
+{{- end }}

@@ -1,0 +1,26 @@
+{
+  "title": "extra secret rules — demo fixture for the feed ingestor",
+  "rules": [
+    {
+      "id": "clickhouse-cloud-key",
+      "description": "ClickHouse Cloud API key",
+      "regex": "\\bch_[a-zA-Z0-9]{32,}\\b",
+      "keywords": ["ch_"],
+      "confidence": 0.95
+    },
+    {
+      "id": "linear-api-key",
+      "description": "Linear API key",
+      "regex": "\\blin_api_[a-zA-Z0-9]{40,}\\b",
+      "keywords": ["lin_api_"],
+      "confidence": 0.95
+    },
+    {
+      "id": "supabase-service-role",
+      "description": "Supabase service role JWT (structural check downstream)",
+      "regex": "\\bsb_secret_[A-Za-z0-9_]{20,}\\b",
+      "keywords": ["sb_secret_"],
+      "confidence": 0.9
+    }
+  ]
+}

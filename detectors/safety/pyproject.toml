@@ -1,0 +1,29 @@
+[project]
+name = "guardx-safety-detector"
+version = "0.1.0"
+description = "GuardX safety detector — llamaguard-shaped classifier over a hosted judge."
+requires-python = ">=3.12"
+# NB: guardx-llm-judge is installed side-by-side via `pip install -e ../llm_judge`
+# (see Dockerfile + docker-compose profile). Not a hard dep here so
+# `pip install -e .` works without a PyPI entry.
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "PyYAML>=6.0",
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["safety_detector*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

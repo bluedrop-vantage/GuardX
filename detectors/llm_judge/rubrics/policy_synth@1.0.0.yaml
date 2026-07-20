@@ -1,0 +1,56 @@
+# policy_synth@1.0.0 — extraction rubric for the LLM synthesizer.
+#
+# The synthesizer feeds one chunk of a customer's policy document at a time.
+# The model returns a JSON array of candidate rules, each mapped to one of
+# the four scenarios. Null-over-guess is enforced (spec §5.2): if a statement
+# doesn't map cleanly to a scenario, the model MUST emit scenario=null and
+# push the item to a human triage queue.
+id: policy_synth
+version: 1.0.0
+scenario: synthesizer
+description: Extract candidate policy rules from a customer compliance document.
+
+# response_format: json_object is the default — leave the model to structure
+# the output. Downstream compiler validates + rejects malformed items.
+response_format: json_object
+
+system: |
+  You are a policy-extraction assistant. Read a chunk of a customer's
+  compliance / risk / brand policy document and return candidate guardrail
+  rules in strict JSON. Never invent obligations that aren't in the source.
+
+user: |
+  Anchor: page {page}, paragraph {para}
+  Source chunk:
+  ---
+  {chunk}
+  ---
+
+  Return JSON of this exact shape:
+  {{
+    "candidates": [
+      {{
+        "rule_text":      string,                          // verbatim quote or tight paraphrase from the source
+        "source_anchor":  {{"page": {page}, "para": {para}}},
+        "scenario":       "pii" | "secrets" | "content_safety" | "hallucination" | null,
+        "direction":      ["input"] | ["output"] | ["input","output"],
+        "on_fail":        "block" | "redact" | "flag" | "block_and_explain",
+        "severity_hint":  "low" | "medium" | "high",       // guides threshold selection downstream
+        "notes":          string                           // 1 short sentence, no fluff
+      }}
+    ]
+  }}
+
+  Rules:
+  - If the source statement does not clearly map to one of the four scenarios,
+    set scenario = null. Do NOT force-fit unmappable statements.
+  - Prefer verbatim quotes for `rule_text` when short; otherwise a tight
+    paraphrase that preserves meaning.
+  - Do not repeat identical candidates.
+  - Return an empty candidates array if the chunk has no actionable rules.
+
+model:
+  provider: together
+  name: meta-llama/Llama-3.3-70B-Instruct-Turbo
+  temperature: 0.0
+  max_tokens: 1024

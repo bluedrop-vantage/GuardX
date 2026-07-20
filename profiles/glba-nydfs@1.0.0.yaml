@@ -1,0 +1,57 @@
+# glba-nydfs@1.0.0 — GLBA + NYDFS Part 500 posture.
+#
+# Financial entity pack; block on SSN/account combos; hallucination threshold
+# tightened to 0.8 for advice-class applications (per spec §3.4 table).
+apiVersion: guardx/v1
+kind: Profile
+metadata:
+  id: glba-nydfs
+  version: 1.0.0
+  parent: baseline@1.0.0
+  labels:
+    framework: "GLBA,NYDFS-500"
+    tier: industry
+spec:
+  applies_to:
+    apps: ["*"]
+    environments: ["*"]
+  defaults:
+    fail_mode: closed
+    timeout_ms: 12000
+  guards:
+    - id: g-pii-io
+      scenario: pii
+      detector: presidio-ensemble@1.4.0
+      direction: [input, output]
+      config:
+        entity_pack: financial-us@2.1
+        language: en
+      threshold: 0.75
+      on_fail: redact
+      evidence: spans
+
+    - id: g-halluc-out
+      scenario: hallucination
+      detector: nli-groundedness@2.1.0
+      direction: [output]
+      config:
+        rubric: nli_groundedness@1.0.0
+        requires_context: true         # advice apps must supply RAG context
+      threshold: 0.8                    # tighter for financial advice per §3.4
+      on_fail: block_and_explain        # advice-class: block + explain
+      evidence: spans
+
+    - id: g-safety-io
+      scenario: content_safety
+      detector: safety-ensemble@1.3.0
+      direction: [input, output]
+      config:
+        rubric: safety_llamaguard@1.0.0
+        category_thresholds:
+          S1: 0.5
+          S6: 0.3       # specialized financial advice — very tight
+          S9: 0.5
+          S13: 0.4      # elections influence
+      threshold: 0.5
+      on_fail: block
+      evidence: spans

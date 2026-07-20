@@ -1,0 +1,153 @@
+# GuardX Helm defaults. Override per environment via values-<env>.yaml.
+#
+# HA posture (spec §6): 3× gateway, 2× per detector, single-writer Control API
+# (Postgres is the state-of-record and holds the SoT). Bumping replicas is a
+# values change — the app itself is stateless past bundle install.
+
+fullnameOverride: ""
+
+# ---- Global ----
+image:
+  registry: ghcr.io/guardx
+  pullPolicy: IfNotPresent
+  # Tag defaults to Chart.appVersion but a values override wins.
+  tag: ""
+
+# Shared config that lands as env on multiple deployments.
+common:
+  env:
+    tenant: acme
+    environment: prod
+
+# ---- Control API ----
+control:
+  enabled: true
+  replicaCount: 2         # single-writer; second is standby for rolling deploys
+  image:
+    repository: guardx-control
+  service:
+    port: 8080
+  resources:
+    requests: { cpu: 200m, memory: 384Mi }
+    limits:   { cpu: 1,    memory: 1Gi   }
+  env:
+    # ↴ REQUIRED — provide via values override or an ExternalSecret.
+    databaseUrl: ""       # postgresql+psycopg://user:pass@host:5432/guardx
+    corsAllowedOrigins: ""
+    apiKeyAdmin: ""
+    apiKeyService: ""
+  signingKey:
+    # Prod: mount from KMS/Vault Transit; leave the following empty to have
+    # the control API generate a dev keyfile on first boot (unsafe for prod).
+    existingSecret: ""    # secretName holding key "signing.pem"
+  probes:
+    liveness:  { path: /healthz, initialDelaySeconds: 10, periodSeconds: 15 }
+    readiness: { path: /healthz, initialDelaySeconds: 3,  periodSeconds: 5  }
+
+# ---- Gateway (data plane) ----
+gateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: guardx-gateway
+  service:
+    port: 8081
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits:   { cpu: 2,    memory: 2Gi   }
+  env:
+    controlBaseURL: ""    # e.g. http://guardx-control:8080
+    upstreamBaseURL: ""   # your upstream LLM
+    piiBackendURL: ""
+    safetyBackendURL: ""
+    nliBackendURL: ""
+    signingKeyID: ""
+    signingPublicKeyB64: ""
+    bundlePollInterval: "2s"
+    evidenceSpool: "/var/lib/guardx/evidence.spool.jsonl"
+  storage:
+    spool:
+      enabled: true
+      size: 10Gi
+      storageClass: ""    # "" → cluster default
+  metrics:
+    enabled: true         # /metrics served on the same port
+    serviceMonitor:
+      enabled: false
+      interval: 30s
+  probes:
+    liveness:  { path: /healthz, initialDelaySeconds: 5, periodSeconds: 10 }
+    readiness: { path: /readyz,  initialDelaySeconds: 3, periodSeconds: 5  }
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+# ---- Detectors ----
+detectors:
+  pii:
+    enabled: true
+    replicaCount: 2
+    image: { repository: guardx-pii }
+    service: { port: 9100 }
+    resources:
+      requests: { cpu: 500m, memory: 512Mi }
+      limits:   { cpu: 2,    memory: 2Gi   }
+  safety:
+    enabled: true
+    replicaCount: 2
+    image: { repository: guardx-safety }
+    service: { port: 9200 }
+    resources:
+      requests: { cpu: 250m, memory: 384Mi }
+      limits:   { cpu: 1,    memory: 1Gi   }
+    env:
+      togetherApiKeySecret: ""   # secretName containing TOGETHER_AI_API_KEY
+      deepInfraApiKeySecret: ""  # secretName containing DEEPINFRA_API_KEY
+  nli:
+    enabled: true
+    replicaCount: 2
+    image: { repository: guardx-nli }
+    service: { port: 9300 }
+    resources:
+      requests: { cpu: 250m, memory: 384Mi }
+      limits:   { cpu: 1,    memory: 1Gi   }
+
+# ---- Admin console ----
+console:
+  enabled: true
+  replicaCount: 2
+  image: { repository: guardx-console }
+  service: { port: 80 }
+
+# ---- Observability ----
+observability:
+  # PodAnnotation Prometheus scraping is on by default (scrape:true, port
+  # matches gateway.service.port). Turn off if you use ServiceMonitor.
+  prometheusScrape:
+    enabled: true
+  alerts:
+    enabled: true
+    # PrometheusRule CRD is created if ` .Values.observability.alerts.crd`
+    # is true — otherwise, alerts are shipped as a ConfigMap for operator
+    # inclusion.
+    crd: false
+  grafana:
+    dashboards:
+      enabled: true
+      labels: { grafana_dashboard: "1" }
+
+# ---- Networking ----
+ingress:
+  enabled: false
+  className: nginx
+  # Public entrypoint. In practice you fan out to control/gateway/console
+  # via distinct hosts or paths.
+  hosts:
+    - host: guardx.example.com
+      paths:
+        - { path: /api,     backend: control }
+        - { path: /gateway, backend: gateway }
+        - { path: /,        backend: console }
+  tls:
+    - secretName: guardx-tls
+      hosts: [guardx.example.com]

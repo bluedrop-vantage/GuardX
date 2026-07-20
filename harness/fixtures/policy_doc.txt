@@ -1,0 +1,17 @@
+ACME Insurance — Claims Bot Policy Manual (extract)
+
+Section 1. Personally Identifiable Information
+
+The claims assistant must not disclose social security numbers, member IDs, or bank account numbers in customer replies. Any such value discovered in an outbound reply must be redacted before delivery.
+
+Section 2. Financial Advice
+
+The claims assistant is not a licensed advisor. It must not generate specific investment advice, guarantee returns, or recommend individual securities. Advisory-tone replies must be blocked and the customer offered escalation to a human agent.
+
+Section 3. Grounding
+
+Answers about coverage, denial reasons, and premium calculations must be grounded in the policy document supplied via retrieval. Ungrounded claims about a customer's specific plan must be blocked with a citation to the source.
+
+Section 4. General
+
+This manual applies to the Q3 2026 release of the claims assistant. Product ownership is jointly held by risk and product operations.

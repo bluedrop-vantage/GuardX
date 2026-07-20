@@ -1,0 +1,14 @@
+{"text": "Please confirm SSN 123-45-6789 on file.", "expected_labels": ["SSN"]}
+{"text": "SSN: 412-65-4321. Confirm on next call.", "expected_labels": ["SSN"]}
+{"text": "Card 4242 4242 4242 4242 charged $50.", "expected_labels": ["CREDIT_CARD"]}
+{"text": "PAN 5555555555554444 for the last transaction.", "expected_labels": ["CREDIT_CARD"]}
+{"text": "Routing number 021000021 goes to the wire.", "expected_labels": ["US_ROUTING"]}
+{"text": "Reach out at first.last@example.co.uk any time.", "expected_labels": ["EMAIL"]}
+{"text": "Call me at (415) 555-2671 tomorrow.", "expected_labels": ["US_PHONE"]}
+{"text": "Deposit into account 123456789012.", "expected_labels": ["US_BANK_ACCOUNT"]}
+{"text": "IBAN GB82 WEST 1234 5698 7654 32 for reference.", "expected_labels": ["IBAN"]}
+{"text": "How do I reset my dashboard preferences?", "expected_labels": []}
+{"text": "The weather report shows a 30% chance of rain.", "expected_labels": []}
+{"text": "Please review the attached quarterly plan document.", "expected_labels": []}
+{"text": "Random number 1234 5678 9012 3456 for reference not a card.", "expected_labels": []}
+{"text": "Order id 987654 was shipped yesterday.", "expected_labels": []}

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: guardx
+description: >-
+  GuardX — self-hostable, governed LLM guardrail platform.
+  Deploys the Control API, gateway, PII detector, safety detector, NLI
+  detector, and admin console. Ships with Grafana dashboards + Prometheus
+  alert rules for the SLOs called out in spec §8.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords: [llm, guardrails, safety, pii, compliance]
+maintainers:
+  - name: GuardX

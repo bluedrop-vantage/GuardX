@@ -1,0 +1,113 @@
+{
+  "annotations": {
+    "list": [
+      { "builtIn": 1, "datasource": "-- Grafana --", "enable": true,
+        "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }
+    ]
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "title": "Guard evaluations / sec",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(guardx_guard_evaluations_total[5m])) by (verdict)",
+          "legendFormat": "{{verdict}}"
+        }
+      ]
+    },
+    {
+      "title": "Per-guard p95 latency",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(guardx_guard_latency_ms_bucket[5m])) by (le, guard_id))",
+          "legendFormat": "{{guard_id}} p95"
+        }
+      ]
+    },
+    {
+      "title": "Actions per direction",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(guardx_action_total[5m])) by (action, direction)",
+          "legendFormat": "{{direction}}/{{action}}"
+        }
+      ]
+    },
+    {
+      "title": "Detector errors",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(guardx_guard_errors_total[5m])) by (scenario, guard_id)",
+          "legendFormat": "{{scenario}}/{{guard_id}}"
+        }
+      ]
+    },
+    {
+      "title": "Bundle age (seconds)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 16, "w": 6, "h": 6 },
+      "targets": [
+        { "expr": "guardx_bundle_age_seconds", "legendFormat": "{{tenant}}/{{env}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 172800 },
+              { "color": "red", "value": 259200 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Bundle seq (current)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 16, "w": 6, "h": 6 },
+      "targets": [
+        { "expr": "guardx_bundle_seq", "legendFormat": "{{tenant}}/{{env}}" }
+      ]
+    },
+    {
+      "title": "Shadow evaluations",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "sum(rate(guardx_guard_shadow_total[5m])) by (guard_id, verdict)",
+          "legendFormat": "{{guard_id}}/{{verdict}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["guardx"],
+  "templating": {
+    "list": [
+      {
+        "name": "tenant", "type": "query",
+        "query": "label_values(guardx_guard_evaluations_total, tenant)",
+        "includeAll": true, "multi": true, "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "utc",
+  "title": "GuardX — Gateway",
+  "uid": "guardx-gateway",
+  "version": 1
+}

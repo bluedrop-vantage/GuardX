@@ -1,0 +1,44 @@
+# nli_groundedness@1.0.0 — per-claim entailment against RAG context.
+#
+# Used by the NLI groundedness detector as tier-1 in M3 first-pass (until a
+# local ONNX NLI cross-encoder lands and pushes this to tier-2 only). Each
+# claim from the answer is scored individually; the guard aggregates via
+# weakest-claim (min) per spec §4.3.3.
+id: nli_groundedness
+version: 1.0.0
+scenario: hallucination
+description: Judge a claim's entailment against provided context documents.
+
+system: |
+  You are a strict factual-grounding classifier. Score whether a claim is
+  supported by the provided context. Return ONLY valid JSON.
+
+user: |
+  Context documents (provided by the retrieval system — the ground truth):
+  ---
+  {context}
+  ---
+
+  Claim to evaluate:
+  ---
+  {claim}
+  ---
+
+  Return JSON with this exact shape:
+  {{
+    "supported":  boolean,          // is the claim entailed by the context?
+    "score":      number in [0,1],  // 1 = fully entailed, 0 = contradicted/absent
+    "evidence":   string,           // shortest verbatim quote from context, or ""
+    "confidence": number in [0,1]   // your certainty in the verdict
+  }}
+
+  Rules:
+  - If nothing in the context addresses the claim, supported=false, score<=0.2.
+  - Numerical/named-entity mismatches → supported=false regardless of tone.
+  - Paraphrases with the same meaning → supported=true, score>=0.7.
+
+model:
+  provider: together
+  name: meta-llama/Llama-3.3-70B-Instruct-Turbo
+  temperature: 0.0
+  max_tokens: 384

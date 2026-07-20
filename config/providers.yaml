@@ -1,0 +1,64 @@
+# GuardX judge providers.
+#
+# Rubrics reference a provider by name (e.g. `model.provider: deepinfra`).
+# Add / remove / point providers here — no code change needed.
+#
+# `api_key` accepts either a literal string or `${VAR}` env-var interpolation.
+# Empty api_key is fine for local endpoints that don't require auth.
+#
+# `type: openai_compatible` covers Together.ai, DeepInfra, OpenAI, Groq, xAI,
+# Fireworks, Ollama (via /v1/chat/completions), vLLM, LM Studio, Text Generation
+# Inference. If you add a provider whose API is different (native Anthropic /
+# Google), add a new `type` and a matching Backend implementation.
+
+default: together
+
+providers:
+
+  # ---------- Remote hosted ----------
+  together:
+    type: openai_compatible
+    base_url: https://api.together.xyz/v1
+    api_key: ${TOGETHER_AI_API_KEY}
+    timeout_s: 15
+
+  deepinfra:
+    type: openai_compatible
+    base_url: https://api.deepinfra.com/v1/openai
+    api_key: ${DEEPINFRA_API_KEY}
+    timeout_s: 15
+
+  openai:
+    type: openai_compatible
+    base_url: https://api.openai.com/v1
+    api_key: ${OPENAI_API_KEY}
+    timeout_s: 15
+
+  groq:
+    type: openai_compatible
+    base_url: https://api.groq.com/openai/v1
+    api_key: ${GROQ_API_KEY}
+    timeout_s: 10
+
+  # ---------- Local / self-hosted ----------
+  # `ollama`   → https://ollama.com                    (default 11434)
+  # `vllm`     → https://github.com/vllm-project/vllm  (default 8000)
+  # `lm_studio`→ https://lmstudio.ai                   (default 1234)
+  # `tgi`     → HF Text-Generation-Inference           (default 8080)
+  ollama:
+    type: openai_compatible
+    base_url: http://localhost:11434/v1
+    api_key: ""                        # Ollama doesn't require auth
+    timeout_s: 60
+
+  vllm:
+    type: openai_compatible
+    base_url: http://localhost:8000/v1
+    api_key: ""
+    timeout_s: 60
+
+  lm_studio:
+    type: openai_compatible
+    base_url: http://localhost:1234/v1
+    api_key: ""
+    timeout_s: 60

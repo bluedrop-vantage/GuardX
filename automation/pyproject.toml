@@ -1,0 +1,26 @@
+[project]
+name = "guardx-automation"
+version = "0.1.0"
+description = "GuardX automation plane — feed ingestors, auto-tuner, LLM synthesizer."
+requires-python = ">=3.12"
+dependencies = [
+  "httpx>=0.27",
+  "pydantic>=2.9",
+  "PyYAML>=6.0",
+  "apscheduler>=3.10",
+  "PyPDF2>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["guardx_automation*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

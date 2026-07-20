@@ -1,0 +1,143 @@
+# -----------------------------------------------------------------------------
+# Secrets & environment
+# -----------------------------------------------------------------------------
+# NEVER commit these. .env.example (if we add one) is the template that ships.
+.env
+.env.*
+!.env.example
+*.env.local
+
+# Signing material — dev keys are generated on first run and must stay local.
+# Production keys live in KMS/Vault and never touch the tree at all.
+dev-signing-key.ed25519
+dev-signing-key.ed25519.pub
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Evidence spool (M2 disk-durable fallback for the emitter)
+guardx-evidence.spool.jsonl
+/tmp/guardx-*.spool.jsonl
+
+# -----------------------------------------------------------------------------
+# Python (control API, PII detector, harness eval)
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build
+*.egg-info/
+*.egg
+build/
+dist/
+wheels/
+.eggs/
+
+# pytest & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+
+# Ruff / mypy / pytest-* caches
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+
+# Jupyter / IPython
+.ipynb_checkpoints/
+
+# Alembic — versions/ is source; tmp SQL from --sql runs is not
+*.sql.bak
+
+# -----------------------------------------------------------------------------
+# Go (gateway, verify_chain CLI)
+# -----------------------------------------------------------------------------
+# Compiled binaries — reproduced from source, never committed.
+/gateway/guardx-gateway
+/gateway/cmd/guardx-gateway/guardx-gateway
+/harness/verify_chain/verify_chain
+
+# Test artifacts
+*.test
+*.out
+*.prof
+
+# Go workspace / module cache (never in tree, but belt-and-braces)
+go.work
+go.work.sum
+vendor/
+
+# -----------------------------------------------------------------------------
+# Node / TypeScript (console — M4)
+# -----------------------------------------------------------------------------
+node_modules/
+/console/dist/
+/console/build/
+/console/.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# -----------------------------------------------------------------------------
+# Docker / infra
+# -----------------------------------------------------------------------------
+*.log
+docker-compose.override.yml
+
+# -----------------------------------------------------------------------------
+# Generated release artifacts (SBOMs, chart tarballs)
+# -----------------------------------------------------------------------------
+# SBOMs are per-release outputs of deploy/sbom/generate.sh — regenerated,
+# not committed. Attach them to a GitHub Release instead.
+/sbom/
+*.cdx.json
+*.spdx.json
+*.tgz
+
+# -----------------------------------------------------------------------------
+# Editors / IDEs
+# -----------------------------------------------------------------------------
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.claude/
+
+# -----------------------------------------------------------------------------
+# OS junk
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# -----------------------------------------------------------------------------
+# Local scratch
+# -----------------------------------------------------------------------------
+/tmp/
+*.local
+/scratch/

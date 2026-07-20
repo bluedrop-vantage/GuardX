@@ -1,0 +1,55 @@
+# financial-us entity pack, v2.1.
+# Consumed by detectors/pii/. Versioned artifact — bumping requires a
+# regression eval run before promotion (spec §5.1 feed workflow).
+id: financial-us
+version: 2.1.0
+scenario: pii
+description: US financial-industry PII entities (SSN, PAN, ACH, IBAN, phone, email).
+language: en
+
+entities:
+  - label: SSN
+    # 9 digits, allowing single space or dash separators. Rejects trivial
+    # invalid areas (000, 666, 900-999) via regex tail; false positives
+    # further reduced by context words.
+    regex: '(?<!\d)(?!000|666|9\d\d)\d{3}[- ]?(?!00)\d{2}[- ]?(?!0000)\d{4}(?!\d)'
+    context_words: [ssn, "social security", "social sec", ss#, tin]
+    base_confidence: 0.75
+
+  - label: CREDIT_CARD
+    # 13-19 digits with optional spaces/dashes. Real confidence set post-Luhn.
+    regex: '(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)'
+    context_words: [card, visa, mastercard, amex, discover, pan, cvv, cvc]
+    base_confidence: 0.55
+    validators: [luhn]
+
+  - label: US_ROUTING
+    # ABA routing number: 9 digits, first two in 00–12, 21–32, 61–72, 80.
+    regex: '(?<!\d)(?:0[0-9]|1[0-2]|2[1-9]|3[0-2]|6[1-9]|7[0-2]|80)\d{7}(?!\d)'
+    context_words: [routing, aba, "routing number", rtn]
+    base_confidence: 0.60
+    validators: [aba_checksum]
+
+  - label: US_BANK_ACCOUNT
+    # 6–17 digit numeric run — very high FP without a context word, so we
+    # only produce a span when a context word is nearby.
+    regex: '(?<!\d)\d{6,17}(?!\d)'
+    context_words: [account, "acct", "account number", "acct#"]
+    base_confidence: 0.30
+    requires_context: true
+
+  - label: IBAN
+    # Two-letter country code + 2 check digits + up to 30 alphanumerics.
+    regex: '\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){10,30}\b'
+    context_words: [iban]
+    base_confidence: 0.75
+    validators: [iban_checksum]
+
+  - label: EMAIL
+    regex: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+    base_confidence: 0.90
+
+  - label: US_PHONE
+    regex: '(?<!\d)(?:\+?1[-. ]?)?\(?[2-9]\d{2}\)?[-. ]?[2-9]\d{2}[-. ]?\d{4}(?!\d)'
+    context_words: [phone, tel, mobile, cell, contact]
+    base_confidence: 0.75

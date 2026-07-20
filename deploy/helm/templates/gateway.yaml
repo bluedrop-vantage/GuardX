@@ -1,0 +1,127 @@
+{{- if .Values.gateway.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guardx.fullname" . }}-gateway
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: {{ .Values.gateway.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 1, maxSurge: 1 }
+  selector:
+    matchLabels: { app: {{ include "guardx.fullname" . }}-gateway }
+  template:
+    metadata:
+      labels:
+        app: {{ include "guardx.fullname" . }}-gateway
+        {{- include "guardx.labels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.observability.prometheusScrape.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.gateway.service.port | quote }}
+        prometheus.io/path: /metrics
+        {{- end }}
+    spec:
+      containers:
+        - name: gateway
+          image: {{ include "guardx.image" (dict "root" . "repo" .Values.gateway.image.repository) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: GUARDX_GATEWAY_ADDR
+              value: ":8081"
+            - name: GUARDX_TENANT
+              value: {{ .Values.common.env.tenant | quote }}
+            - name: GUARDX_ENV
+              value: {{ .Values.common.env.environment | quote }}
+            - name: GUARDX_CONTROL_BASE_URL
+              value: {{ .Values.gateway.env.controlBaseURL | quote }}
+            - name: GUARDX_UPSTREAM_BASE_URL
+              value: {{ .Values.gateway.env.upstreamBaseURL | quote }}
+            - name: GUARDX_PII_BACKEND_URL
+              value: {{ .Values.gateway.env.piiBackendURL | quote }}
+            - name: GUARDX_SAFETY_BACKEND_URL
+              value: {{ .Values.gateway.env.safetyBackendURL | quote }}
+            - name: GUARDX_NLI_BACKEND_URL
+              value: {{ .Values.gateway.env.nliBackendURL | quote }}
+            - name: GUARDX_SIGNING_KEY_ID
+              value: {{ .Values.gateway.env.signingKeyID | quote }}
+            {{- if .Values.gateway.env.signingPublicKeyB64 }}
+            - name: GUARDX_SIGNING_PUBLIC_KEY_B64
+              value: {{ .Values.gateway.env.signingPublicKeyB64 | quote }}
+            {{- end }}
+            - name: GUARDX_BUNDLE_POLL_INTERVAL
+              value: {{ .Values.gateway.env.bundlePollInterval | quote }}
+            {{- if .Values.gateway.storage.spool.enabled }}
+            - name: GUARDX_EVIDENCE_SPOOL
+              value: {{ .Values.gateway.env.evidenceSpool | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          livenessProbe:
+            httpGet: { path: {{ .Values.gateway.probes.liveness.path }}, port: http }
+            initialDelaySeconds: {{ .Values.gateway.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.gateway.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet: { path: {{ .Values.gateway.probes.readiness.path }}, port: http }
+            initialDelaySeconds: {{ .Values.gateway.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.gateway.probes.readiness.periodSeconds }}
+          {{- if .Values.gateway.storage.spool.enabled }}
+          volumeMounts:
+            - name: evidence-spool
+              mountPath: /var/lib/guardx
+          {{- end }}
+      {{- if .Values.gateway.storage.spool.enabled }}
+      volumes:
+        - name: evidence-spool
+          emptyDir: {}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "guardx.fullname" . }}-gateway
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.gateway.service.port }}
+      targetPort: 8081
+      name: http
+  selector:
+    app: {{ include "guardx.fullname" . }}-gateway
+{{- if .Values.gateway.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "guardx.fullname" . }}-gateway
+spec:
+  minAvailable: {{ .Values.gateway.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: { app: {{ include "guardx.fullname" . }}-gateway }
+{{- end }}
+{{- if .Values.gateway.metrics.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "guardx.fullname" . }}-gateway
+  labels: { {{- include "guardx.labels" . | nindent 4 }} }
+spec:
+  selector:
+    matchLabels: { app.kubernetes.io/component: gateway }
+  endpoints:
+    - port: http
+      interval: {{ .Values.gateway.metrics.serviceMonitor.interval }}
+      path: /metrics
+{{- end }}
+{{- end }}

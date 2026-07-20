@@ -1,0 +1,24 @@
+# GuardX automation scheduler config.
+#
+# Cron expressions are 5-field (min hour dom mon dow), evaluated in UTC.
+# Add a task by appending to the list. Each task's `kind` maps to an
+# adapter registered in guardx_automation/scheduler/runner.py.
+
+tasks:
+  - name: gitleaks-feed-hourly
+    kind: gitleaks_feed
+    cron: "0 * * * *"          # top of every hour
+    args:
+      tenant: acme
+      policy_id: pii-financial-services
+      # For dev: a local ruleset. Prod: a URL to the Gitleaks release JSON.
+      source: /var/lib/guardx/rulesets/gitleaks.json
+
+  - name: autotuner-nightly-claims-bot
+    kind: autotuner
+    cron: "17 3 * * *"          # 03:17 UTC daily
+    args:
+      tenant: acme
+      app: claims-bot
+      policy_id: pii-financial-services
+      days_lookback: 14

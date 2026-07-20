@@ -1,0 +1,98 @@
+# GuardX Prometheus alert rules (spec §8 alert defaults).
+#
+# Two runbook classes intentionally kept apart:
+#   • fail-open     — security incident (guard error while `fail_mode=open`)
+#   • fail-closed   — availability incident (guard errors while `fail_mode=closed`)
+#
+# The bundle-staleness alert is what backstops the §3.2 max_age_hours check —
+# gateways can also enter their per-guard fail_mode posture on their own, but
+# by then a human should already know.
+groups:
+  - name: guardx.slo
+    interval: 30s
+    rules:
+
+      - alert: GuardXBundleStale
+        expr: guardx_bundle_age_seconds > 259200   # 72h
+        for: 5m
+        labels: { severity: warning, category: policy_drift }
+        annotations:
+          summary: "GuardX bundle older than 72h ({{ $labels.tenant }}/{{ $labels.env }})"
+          description: |
+            The gateway is serving a bundle >72h old (spec §3.2). It has already
+            entered per-guard fail_mode posture. Rebuild the bundle from the
+            Control API or investigate the poller.
+          runbook: /runbooks/bundle-stale
+
+      - alert: GuardXBundleAgeCritical
+        expr: guardx_bundle_age_seconds > 604800   # 7d
+        for: 5m
+        labels: { severity: critical, category: policy_drift }
+        annotations:
+          summary: "GuardX bundle older than 7d ({{ $labels.tenant }}/{{ $labels.env }})"
+          runbook: /runbooks/bundle-stale
+
+      - alert: GuardXDetectorErrorSpike
+        expr: |
+          sum by (guard_id, scenario)
+            (rate(guardx_guard_errors_total[5m]))
+            > 0.5
+        for: 10m
+        labels: { severity: warning, category: detector_health }
+        annotations:
+          summary: "Detector error rate >0.5/s on {{ $labels.guard_id }}"
+          description: |
+            Detector backing guard {{ $labels.guard_id }} ({{ $labels.scenario }})
+            is erroring. If fail_mode=closed → user requests are being blocked.
+            If fail_mode=open → guards are silently passing traffic. Investigate.
+          runbook: /runbooks/detector-outage
+
+      - alert: GuardXFailOpenOccurring
+        # Any detector error + open fail_mode = potentially unguarded traffic.
+        # Approximated by (errors > 0) and (verdict=PASS from same guard rising).
+        expr: |
+          rate(guardx_guard_errors_total[5m]) > 0
+        for: 5m
+        labels: { severity: critical, category: security }
+        annotations:
+          summary: "GuardX detector errors observed — check fail_mode posture"
+          description: |
+            Guards backed by a failing detector may be passing traffic under
+            fail_mode=open. Verify per-guard fail_mode and page security if
+            confirmed.
+          runbook: /runbooks/fail-open
+
+      - alert: GuardXHighBlockRate
+        expr: |
+          sum by (app) (rate(guardx_action_total{action="block"}[5m]))
+            > 5
+        for: 10m
+        labels: { severity: warning, category: availability }
+        annotations:
+          summary: "GuardX block rate >5/s on {{ $labels.app }}"
+          description: |
+            An unusual spike in blocked requests — either a real attack or an
+            overly-tightened policy. Cross-check with autotuner recommendations.
+
+  - name: guardx.pipeline
+    interval: 60s
+    rules:
+
+      - alert: GuardXControlAPIDown
+        expr: up{job=~".*guardx.*control.*"} == 0
+        for: 2m
+        labels: { severity: critical, category: control_plane }
+        annotations:
+          summary: "GuardX Control API down"
+          description: |
+            No successful scrape of the Control API in 2m. Bundle builds and
+            evidence ingest are stalled. Gateways continue serving the
+            last-known-good bundle until it goes stale.
+          runbook: /runbooks/control-outage
+
+      - alert: GuardXGatewayNoBundleInstalled
+        expr: absent(guardx_bundle_seq) or guardx_bundle_seq == 0
+        for: 5m
+        labels: { severity: warning, category: control_plane }
+        annotations:
+          summary: "GuardX gateway has no policy bundle installed"

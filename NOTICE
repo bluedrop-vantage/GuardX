@@ -1,0 +1,59 @@
+GuardX
+Copyright 2026 GuardX contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+----
+
+This product bundles or depends on the following third-party components,
+which are available under their respective licenses. Complete SBOMs are
+produced by `deploy/sbom/generate.sh`; a summary follows.
+
+Gateway (Go, stdlib-only) - no third-party runtime dependencies.
+
+Control API (Python):
+  * FastAPI (MIT)                     https://github.com/tiangolo/fastapi
+  * Uvicorn (BSD-3-Clause)            https://github.com/encode/uvicorn
+  * SQLAlchemy (MIT)                  https://github.com/sqlalchemy/sqlalchemy
+  * Alembic (MIT)                     https://github.com/sqlalchemy/alembic
+  * Pydantic (MIT)                    https://github.com/pydantic/pydantic
+  * psycopg (LGPL-3.0)                https://github.com/psycopg/psycopg
+  * cryptography (Apache-2.0 / BSD)   https://github.com/pyca/cryptography
+  * jsonschema (MIT)                  https://github.com/python-jsonschema/jsonschema
+  * PyJWT (MIT)                       https://github.com/jpadilla/pyjwt
+  * httpx (BSD-3-Clause)              https://github.com/encode/httpx
+
+Detectors (Python):
+  * regex (Apache-2.0)                https://github.com/mrabarnett/mrab-regex
+  * PyYAML (MIT)                      https://github.com/yaml/pyyaml
+
+Automation:
+  * APScheduler (MIT)                 https://github.com/agronholm/apscheduler
+  * PyPDF2 (BSD-3-Clause)             https://github.com/py-pdf/pypdf
+
+Console (TypeScript):
+  * React (MIT)                       https://github.com/facebook/react
+  * React Router (MIT)                https://github.com/remix-run/react-router
+  * @supabase/supabase-js (MIT)       https://github.com/supabase/supabase-js
+  * Vite (MIT)                        https://github.com/vitejs/vite
+
+Vendored data:
+  * `gateway/internal/detector/secrets/rules.json` — patterns compatible with
+     Gitleaks (MIT); see https://github.com/gitleaks/gitleaks for the upstream
+     ruleset. Patterns are re-authored, not directly copied; if any pattern
+     is byte-identical it remains covered by the upstream MIT license.
+
+Third-party services (optional, not bundled):
+  * Together.ai, DeepInfra, OpenAI, Groq, Ollama, vLLM - operator-selected
+     backends for the LLM Judge. Configured via `config/providers.yaml`.
+     Each is governed by its own terms of service.

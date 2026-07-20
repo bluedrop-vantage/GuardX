@@ -1,0 +1,27 @@
+[project]
+name = "guardx-nli-detector"
+version = "0.1.0"
+description = "GuardX hallucination detector — NLI groundedness (claim segmentation + judge)."
+requires-python = ">=3.12"
+# guardx-llm-judge installed side-by-side; see docker-compose + Dockerfile.
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "PyYAML>=6.0",
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["nli_detector*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

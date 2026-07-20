@@ -1,0 +1,66 @@
+# baseline@1.0.0 — sensible defaults for every tenant.
+#
+# Inherited by every industry profile unless explicitly overridden. Keep the
+# footprint minimal — anything specific goes in the industry profile.
+apiVersion: guardx/v1
+kind: Profile
+metadata:
+  id: baseline
+  version: 1.0.0
+  labels:
+    framework: baseline
+    tier: platform
+spec:
+  applies_to:
+    apps: ["*"]
+    environments: ["*"]
+  defaults:
+    fail_mode: closed
+    timeout_ms: 12000
+  guards:
+    - id: g-secrets-io
+      scenario: secrets
+      detector: secretscan@0.1.0
+      direction: [input, output]
+      config: {}
+      threshold: 0.9
+      on_fail: block
+      evidence: spans
+
+    - id: g-pii-out
+      scenario: pii
+      detector: presidio-ensemble@1.4.0
+      direction: [output]
+      config:
+        entity_pack: financial-us@2.1
+        language: en
+      threshold: 0.8
+      on_fail: flag        # baseline is observability-first; industry profiles escalate
+      evidence: spans
+
+    - id: g-safety-io
+      scenario: content_safety
+      detector: safety-ensemble@1.3.0
+      direction: [input, output]
+      config:
+        rubric: safety_llamaguard@1.0.0
+        category_thresholds:
+          S1: 0.5   # violent crimes
+          S3: 0.5   # sex-related crimes
+          S4: 0.3   # CSAM — tighter
+          S9: 0.5   # weapons
+          S11: 0.4  # suicide & self-harm
+      threshold: 0.5
+      on_fail: block
+      evidence: spans
+
+    - id: g-halluc-out
+      scenario: hallucination
+      detector: nli-groundedness@2.1.0
+      direction: [output]
+      config:
+        rubric: nli_groundedness@1.0.0
+        requires_context: false   # baseline: flag but don't block ungroundable text
+      threshold: 0.5
+      on_fail: flag              # baseline: don't block; industry profiles escalate
+      evidence: spans

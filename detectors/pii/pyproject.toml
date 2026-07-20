@@ -1,0 +1,25 @@
+[project]
+name = "guardx-pii-detector"
+version = "0.1.0"
+description = "GuardX PII detector — presidio-ensemble (Layer 1 regex + context scoring)."
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "PyYAML>=6.0",
+  "regex>=2024.5.15",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["pii_detector*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

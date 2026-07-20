@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://guardx.dev/schemas/bundle.schema.json",
+  "title": "GuardX Bundle Manifest",
+  "type": "object",
+  "required": ["tenant", "environment", "bundle_seq", "policies", "detectors", "created_at", "max_age_hours"],
+  "additionalProperties": false,
+  "properties": {
+    "tenant": { "type": "string" },
+    "environment": { "type": "string" },
+    "bundle_seq": { "type": "integer", "minimum": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "max_age_hours": { "type": "integer", "minimum": 1, "default": 72 },
+    "policies": {
+      "type": "array",
+      "description": "Approved policy documents included in the bundle.",
+      "items": {
+        "type": "object",
+        "required": ["policy_id", "version", "document_hash", "document"],
+        "additionalProperties": false,
+        "properties": {
+          "policy_id": { "type": "string" },
+          "version": { "type": "string" },
+          "document_hash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "document": { "type": "object" }
+        }
+      }
+    },
+    "detectors": {
+      "type": "array",
+      "description": "Pinned detector versions + OCI image digests referenced by policies.",
+      "items": {
+        "type": "object",
+        "required": ["detector_id", "version"],
+        "additionalProperties": false,
+        "properties": {
+          "detector_id": { "type": "string" },
+          "version": { "type": "string" },
+          "image_digest": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{{- if .Values.console.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guardx.fullname" . }}-console
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  replicas: {{ .Values.console.replicaCount }}
+  selector:
+    matchLabels: { app: {{ include "guardx.fullname" . }}-console }
+  template:
+    metadata:
+      labels:
+        app: {{ include "guardx.fullname" . }}-console
+        {{- include "guardx.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: console
+          image: {{ include "guardx.image" (dict "root" . "repo" .Values.console.image.repository) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "guardx.fullname" . }}-console
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.console.service.port }}
+      targetPort: 80
+      name: http
+  selector:
+    app: {{ include "guardx.fullname" . }}-console
+{{- end }}

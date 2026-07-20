@@ -1,0 +1,38 @@
+{{- if .Values.observability.grafana.dashboards.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "guardx.fullname" . }}-grafana-dashboards
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    {{- toYaml .Values.observability.grafana.dashboards.labels | nindent 4 }}
+data:
+  gateway.json: |-
+    {{- .Files.Get "dashboards/gateway.json" | nindent 4 }}
+{{- end }}
+{{- if .Values.observability.alerts.enabled }}
+{{- if .Values.observability.alerts.crd }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "guardx.fullname" . }}-alerts
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+spec:
+{{- .Files.Get "alerts/guardx-alerts.yaml" | nindent 2 }}
+{{- else }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "guardx.fullname" . }}-alert-rules
+  labels:
+    {{- include "guardx.labels" . | nindent 4 }}
+    prometheus: "1"
+data:
+  guardx-alerts.yaml: |-
+    {{- .Files.Get "alerts/guardx-alerts.yaml" | nindent 4 }}
+{{- end }}
+{{- end }}
