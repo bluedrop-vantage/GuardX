@@ -237,7 +237,7 @@ State machine: `draft → in_review → approved → (deprecated | revoked)`. `r
 
 ### **3.4 Industry profile packs**
 
-A profile is a signed, versioned policy fragment shipped by BlueDrop (or authored by the tenant) that sets scenario defaults for a regulatory context. v1 ships:
+A profile is a signed, versioned policy fragment shipped by Ajay (or authored by the tenant) that sets scenario defaults for a regulatory context. v1 ships:
 
 | Profile | Contents (summary) |
 | ----- | ----- |
